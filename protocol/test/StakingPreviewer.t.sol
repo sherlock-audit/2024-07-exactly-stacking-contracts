@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import { Test } from "forge-std/Test.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {
+  ERC20,
   IERC20,
   StakingPreviewer,
   StakedEXA,
@@ -22,7 +23,7 @@ contract StakingPreviewerTest is Test {
   MockERC20 internal rA;
   MockERC20 internal rB;
   Parameters internal p;
-  MockERC20 internal providerAsset;
+  MockMarket internal market;
 
   function setUp() external {
     vm.warp(1_704_067_200); // 01/01/2024 @ 00:00 (UTC)
@@ -33,7 +34,7 @@ contract StakingPreviewerTest is Test {
     vm.label(address(rA), "rA");
     vm.label(address(rB), "rB");
 
-    providerAsset = new MockERC20("Wrapped ETH", "WETH", 18);
+    market = new MockMarket(new MockERC20("Wrapped ETH", "WETH", 18));
 
     p = Parameters({
       asset: exa,
@@ -42,7 +43,7 @@ contract StakingPreviewerTest is Test {
       excessFactor: 0.5e18,
       penaltyGrowth: 2e18,
       penaltyThreshold: 0.5e18,
-      market: Market(address(new MockMarket(providerAsset))),
+      market: Market(address(market)),
       provider: address(0x2),
       savings: address(0x3),
       duration: 1 weeks,
@@ -169,6 +170,7 @@ contract StakingPreviewerTest is Test {
     for (uint256 i = 0; i < rewards.length; i++) {
       IERC20 reward = rewards[i].reward;
       (, uint40 finishAt, , , uint256 rate) = stEXA.rewards(reward);
+      assertEq(rewards[i].symbol, ERC20(address(reward)).symbol());
       assertEq(rewards[i].finishAt, finishAt);
       assertEq(rewards[i].rate, rate);
       assertEq(rewards[i].claimable, stEXA.claimable(reward, address(this), stEXA.balanceOf(address(this))));
