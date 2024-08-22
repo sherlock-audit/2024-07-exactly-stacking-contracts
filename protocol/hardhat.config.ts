@@ -35,7 +35,10 @@ const hardhatConfig: Config = {
     optimism: { priceDecimals: 8, timelockDelay: 24 * 3_600, url: env.OPTIMISM_NODE ?? "" },
     "op-sepolia": {
       priceDecimals: 8,
-      finance: { escrow: { vestingPeriod: 7 * 86_400, reserveRatio: 0.25 } },
+      finance: {
+        escrow: { vestingPeriod: 7 * 86_400, reserveRatio: 0.25 },
+        staking: { minTime: 3_600, refTime: 86_400 },
+      },
       url: env.OP_SEPOLIA_NODE ?? "",
     },
   },
@@ -100,14 +103,14 @@ const hardhatConfig: Config = {
       reserveRatio: 0.25,
     },
     staking: {
-      minTime: 1 * 86_400,
-      refTime: 3 * 86_400,
-      excessFactor: 0.7,
+      minTime: 0,
+      refTime: 365 * 86_400,
+      excessFactor: 0.9,
       penaltyGrowth: 2,
-      penaltyThreshold: 0.2,
-      market: "WETH",
+      penaltyThreshold: 0.1,
+      market: "USDC",
       duration: 4 * 7 * 86_400,
-      providerRatio: 0.69,
+      providerRatio: 0.5,
     },
     markets: {
       WETH: {
@@ -137,9 +140,9 @@ const hardhatConfig: Config = {
               },
               esEXA: {
                 total: 310_000,
-                debt: 480,
+                debt: 1_700,
                 start: "2023-10-23T14:00Z",
-                period: (42 * 7 + 2) * 86_400,
+                period: (46 * 7 + 2) * 86_400,
                 undistributedFactor: 0.65,
                 compensationFactor: 0.7,
                 transitionFactor: 0.7056,
@@ -173,10 +176,10 @@ const hardhatConfig: Config = {
                 depositAllocationWeightAddend: 0.06,
               },
               esEXA: {
-                total: 270_000,
+                total: 347_000,
                 debt: 7_000_000,
                 start: "2024-05-08",
-                period: (14 * 7 + 1) * 86_400,
+                period: (18 * 7 + 1) * 86_400,
                 undistributedFactor: 0.3,
                 transitionFactor: 0.83,
                 compensationFactor: 0.85,
@@ -232,14 +235,14 @@ const hardhatConfig: Config = {
             adjustFactor: 0.78,
             rewards: {
               esEXA: {
-                total: 22_000,
+                total: 24_500,
                 debt: 0.004,
                 undistributedFactor: 0.3,
                 transitionFactor: 0.6,
                 compensationFactor: 0,
                 depositAllocationWeightAddend: 0.06,
                 start: "2023-12-20",
-                period: (34 * 7 + 1) * 86_400,
+                period: (38 * 7 + 1) * 86_400,
               },
             },
           },
@@ -277,7 +280,7 @@ const hardhatConfig: Config = {
                 total: 105_000,
                 debt: 0.05,
                 start: "2023-10-23T14:00Z",
-                period: (42 * 7 + 2) * 86_400,
+                period: (46 * 7 + 2) * 86_400,
                 compensationFactor: 0,
                 transitionFactor: 0.64,
                 depositAllocationWeightAddend: 0.03,
@@ -308,9 +311,9 @@ const hardhatConfig: Config = {
               },
               esEXA: {
                 total: 30_000,
-                debt: 1_000,
+                debt: 9_000,
                 start: "2023-10-23T14:00Z",
-                period: (42 * 7 + 2) * 86_400,
+                period: (46 * 7 + 2) * 86_400,
                 undistributedFactor: 0.3,
                 compensationFactor: 0,
                 transitionFactor: 0.364,
@@ -380,6 +383,7 @@ extendConfig((extendedConfig, { finance }) => {
     networkConfig.finance = {
       ...finance,
       ...networkConfig.finance,
+      staking: { ...finance.staking, ...networkConfig.finance?.staking },
       markets: Object.fromEntries(
         Object.entries(finance.markets)
           .filter(([, { networks }]) => !live || !networks || networks.includes(networkName))
@@ -498,7 +502,7 @@ declare module "hardhat/types/config" {
   export interface HttpNetworkUserConfig {
     priceDecimals: number;
     timelockDelay?: number;
-    finance?: Partial<FinanceConfig>;
+    finance?: Omit<Partial<FinanceConfig>, "staking"> & { staking?: Partial<StakingParameters> };
     sunset?: boolean;
   }
 
